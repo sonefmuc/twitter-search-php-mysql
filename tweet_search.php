@@ -41,7 +41,7 @@ $tweets = $connection->get("https://api.twitter.com/1.1/search/tweets.json?q=".$
 
 echo "<center><h2>Tweets fetched!</h2><br />";
 
-$get_maxid = mysql_query ("SELECT MAX(`tweetid`) FROM `twitter_db`.`tweets`");
+$get_maxid = mysql_query ("SELECT MAX(`tweetid`) FROM $db_database.`tweets`");
 $max_tweetid= mysql_result($get_maxid , 0);
 echo "max: $max_tweetid <br />";
 
@@ -55,12 +55,12 @@ foreach ($tweets->statuses as $tweet){
 
 		//Dig out any hashtags from the tweets and upload to the hashtags table
 		foreach($tweet->entities->hashtags as $hashtag) {
-			mysql_query ("INSERT INTO `twitter_db`.`tweets_hashtags` ( `tweetid`, `hashtag`) VALUES ('{$tweet->id_str}', '{$hashtag->text}')");
+			mysql_query ("INSERT INTO $db_database.`tweets_hashtags` ( `tweetid`, `hashtag`) VALUES ('{$tweet->id_str}', '{$hashtag->text}')");
 
 		}
 		//Get any urls from the tweets and upload to the urls table
 		foreach($tweet->entities->urls as $url) {
-			mysql_query ("INSERT INTO `twitter_db`.`tweets_urls` ( `tweetid`, `url`) VALUES ('{$tweet->id_str}', '{$url->expanded_url}')");
+			mysql_query ("INSERT INTO $db_database.`tweets_urls` ( `tweetid`, `url`) VALUES ('{$tweet->id_str}', '{$url->expanded_url}')");
 
 		}
 		/*Get fields 
@@ -68,7 +68,7 @@ foreach ($tweets->statuses as $tweet){
 		`source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`		
 		from tweet and upload to tweets table*/
 
-		mysql_query ("INSERT INTO `twitter_db`.`tweets` ( `user_name`, `screen_name`, `tweet`, `tweetid`, `retweet_count`, `followers_count`, `friends_count`, `listed_count`,  `source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`) VALUES ('{$tweet->user->name}', '{$tweet->user->screen_name}', '{$tweet->text}', '{$tweet->id_str}', '{$tweet->retweet_count}', '{$tweet->user->followers_count}', '{$tweet->user->friends_count}', '{$tweet->user->listed_count}', '{$tweet->source}', '{$tweet->lang}', '{$tweet->coordinates->type}', '{$tweet->coordinates->coordinates[0]}', '{$tweet->coordinates->coordinates[1]}', '{$tweet->user->location}', '$datetime_mysql')");	
+		mysql_query ("INSERT INTO $db_database.`tweets` ( `user_name`, `screen_name`, `tweet`, `tweetid`, `retweet_count`, `followers_count`, `friends_count`, `listed_count`,  `source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`) VALUES ('{$tweet->user->name}', '{$tweet->user->screen_name}', '{$tweet->text}', '{$tweet->id_str}', '{$tweet->retweet_count}', '{$tweet->user->followers_count}', '{$tweet->user->friends_count}', '{$tweet->user->listed_count}', '{$tweet->source}', '{$tweet->lang}', '{$tweet->coordinates->type}', '{$tweet->coordinates->coordinates[0]}', '{$tweet->coordinates->coordinates[1]}', '{$tweet->user->location}', '$datetime_mysql')");	
 				
 		
 	}

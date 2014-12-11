@@ -29,8 +29,8 @@ function getConnectionWithAccessToken($cons_key, $cons_secret, $oauth_token, $oa
  
 $connection = getConnectionWithAccessToken($consumerkey, $consumersecret, $accesstoken, $accesstokensecret);
 
-$twitterhashtag = "#washington OR #newyork OR #losangeles";
-$twitterhashtag = urlencode($twitterhashtag);
+$hashtags_text = "#london OR #usa OR #obama";
+$twitterhashtag = urlencode($hashtags_text);
 //for more hashtags to be followed just inserted new OR #hashtag
 
 $count_num=99; // max number of tweets to be returned in each call
@@ -39,12 +39,15 @@ $results_mode='recent'; //get the most recent tweets
 
 $tweets = $connection->get("https://api.twitter.com/1.1/search/tweets.json?q=".$twitterhashtag."&count=".$count_num."&result_type=".$results_mode);
 
+
 echo "<center><h2>Tweets fetched!</h2><br />";
 
 $get_maxid = mysql_query ("SELECT MAX(`tweetid`) FROM $db_database.`tweets`");
 $max_tweetid= mysql_result($get_maxid , 0);
-echo "max: $max_tweetid <br />";
 
+echo "hashtags searched:  $hashtags_text <br />";
+
+$count = 0; //counter to get the new fetched tweets
 foreach ($tweets->statuses as $tweet){
 	
 	if( $tweet->id_str >$max_tweetid){ //Check the max id in db and get only the latest tweets
@@ -68,11 +71,23 @@ foreach ($tweets->statuses as $tweet){
 		`source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`		
 		from tweet and upload to tweets table*/
 
+if (empty($tweet->coordinates->type)) {
+
+		mysql_query ("INSERT INTO $db_database.`tweets` ( `user_name`, `screen_name`, `tweet`, `tweetid`, `retweet_count`, `followers_count`, `friends_count`, `listed_count`,  `source`, `lang`, `location`, `date_tweeted`) VALUES ('{$tweet->user->name}', '{$tweet->user->screen_name}', '{$tweet->text}', '{$tweet->id_str}', '{$tweet->retweet_count}', '{$tweet->user->followers_count}', '{$tweet->user->friends_count}', '{$tweet->user->listed_count}', '{$tweet->source}', '{$tweet->lang}', '{$tweet->user->location}', '$datetime_mysql')");	
+				}else{
 		mysql_query ("INSERT INTO $db_database.`tweets` ( `user_name`, `screen_name`, `tweet`, `tweetid`, `retweet_count`, `followers_count`, `friends_count`, `listed_count`,  `source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`) VALUES ('{$tweet->user->name}', '{$tweet->user->screen_name}', '{$tweet->text}', '{$tweet->id_str}', '{$tweet->retweet_count}', '{$tweet->user->followers_count}', '{$tweet->user->friends_count}', '{$tweet->user->listed_count}', '{$tweet->source}', '{$tweet->lang}', '{$tweet->coordinates->type}', '{$tweet->coordinates->coordinates[0]}', '{$tweet->coordinates->coordinates[1]}', '{$tweet->user->location}', '$datetime_mysql')");	
-				
+$count += 1;
+}
 		
 	}
 }
 
+//Output the number of recent tweets that are stored in the db
+echo "fresh tweets:  $count <br />";
+
+//Update the new max tweet id
+$get_maxid = mysql_query ("SELECT MAX(`tweetid`) FROM $db_database.`tweets`");
+$max_tweetid= mysql_result($get_maxid , 0);
+echo "max tweet id:  $max_tweetid <br />";
 
 ?>

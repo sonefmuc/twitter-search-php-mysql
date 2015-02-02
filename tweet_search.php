@@ -34,7 +34,7 @@ function getConnectionWithAccessToken($cons_key, $cons_secret, $oauth_token, $oa
  
 $connection = getConnectionWithAccessToken($consumerkey, $consumersecret, $accesstoken, $accesstokensecret);
 
-$hashtags_text = "london OR #usa OR #obama";
+$hashtags_text = "#animaltesting OR #animalrights";
 $twitterhashtag = urlencode($hashtags_text);
 //for more hashtags to be followed just inserted new OR #hashtag
 

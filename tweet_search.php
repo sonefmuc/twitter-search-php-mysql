@@ -64,8 +64,7 @@ if ($stmt = $mysqli->prepare("SELECT MAX(tweetid) FROM tweets")) {
     $stmt->close();
 }
 
-
-echo "hashtags searched:  $hashtags_text <br />";
+//echo "hashtags searched:  $hashtags_text <br />";
 
 $count = 0; //counter to get the new fetched tweets
 foreach ($tweets->statuses as $tweet){
@@ -77,12 +76,12 @@ foreach ($tweets->statuses as $tweet){
 		$datetime_mysql = date('Y-m-d H:i:s', strtotime($datetime)); //convert datetime to mysql datetime type
 		
 		/* create a prepared statement */
-		if ($stmt = $mysqli->prepare("INSERT INTO tweets_hashtags (tweetid, hashtag) VALUES (?,?)")) {
+		if ($stmt = $mysqli->prepare("INSERT INTO tweets_hashtags (tweetid, hashtag, date_tweeted) VALUES (?,?,?)")) {
 
 			//Dig out any hashtags from the tweets and upload to the hashtags table
 			foreach($tweet->entities->hashtags as $hashtag) {
 			    /* bind parameters for markers */
-			    $stmt->bind_param("is",$tweet->id_str,$hashtag->text);
+			    $stmt->bind_param("iss",$tweet->id_str,$hashtag->text, $datetime_mysql);
 
 			    /* execute query */
 			    $stmt->execute();	    
@@ -96,11 +95,11 @@ foreach ($tweets->statuses as $tweet){
 
 		//Get any urls from the tweets and upload to the urls table
 		/* create a prepared statement */
-		if ($stmt = $mysqli->prepare("INSERT INTO tweets_urls (tweetid, url) VALUES (?,?)")) {
+		if ($stmt = $mysqli->prepare("INSERT INTO tweets_urls (tweetid, url, date_tweeted) VALUES (?,?,?)")) {
 
 			foreach($tweet->entities->urls as $url) {
 			    /* bind parameters for markers */
-			    $stmt->bind_param("is",$tweet->id_str, $url->expanded_url);
+			    $stmt->bind_param("iss",$tweet->id_str, $url->expanded_url, $datetime_mysql);
 
 			    /* execute query */
 			    $stmt->execute();	    
@@ -131,38 +130,72 @@ foreach ($tweets->statuses as $tweet){
 		`source`, `lang`, `coordinates_type`, `lon`, `lat`,  `location`, `date_tweeted`		
 		from tweet and upload to tweets table*/
 
-		if (empty($tweet->coordinates)) {
-			if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, followers_count, friends_count, listed_count, source, lang, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")) {
+		if (!empty($tweet->retweeted_status)) {			
+			if (empty($tweet->coordinates)) {
+				if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, retweet_id, retweet_user, followers_count, friends_count, listed_count, source, lang, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
 
-			    /* bind parameters for markers */
-			    $stmt->bind_param("sssiiiiissss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->user->location, $datetime_mysql);
+				    /* bind parameters for markers */
+				    $stmt->bind_param("sssiiisiiissss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->retweeted_status->id_str, $tweet->retweeted_status->user->screen_name, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->user->location, $datetime_mysql);
 
-			    /* execute query */
-			    $stmt->execute();	    
+				    /* execute query */
+				    $stmt->execute();	    
 		
-			    /* close statement */
-			    $stmt->close();
+				    /* close statement */
+				    $stmt->close();
 
+				}
+			}else{
+				if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, retweet_id, retweet_user, followers_count, friends_count, listed_count, source, lang, coordinates_type, lon, lat, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+
+				/* bind parameters for markers */
+			    	$stmt->bind_param("sssiiisiiisssddss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->retweeted_status->id_str, $tweet->retweeted_status->user->screen_name, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->coordinates->type, $tweet->coordinates->coordinates[0], $tweet->coordinates->coordinates[1], $tweet->user->location, $datetime_mysql);
+
+			    	/* execute query */
+			    	$stmt->execute();
+		
+			   	/* close statement */
+			   	$stmt->close();
+		    		}
 			}
+
 		}else{
-			if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, followers_count, friends_count, listed_count, source, lang, coordinates_type, lon, lat, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
 
-			/* bind parameters for markers */
-		    	$stmt->bind_param("sssiiiiisssddss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->coordinates->type, $tweet->coordinates->coordinates[0], $tweet->coordinates->coordinates[1], $tweet->user->location, $datetime_mysql);
+			if (empty($tweet->coordinates)) {
+				if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, followers_count, friends_count, listed_count, source, lang, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")) {
 
-		    	/* execute query */
-		    	$stmt->execute();
+				    /* bind parameters for markers */
+				    $stmt->bind_param("sssiiiiissss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->user->location, $datetime_mysql);
+
+				    /* execute query */
+				    $stmt->execute();	    
 		
-		   	/* close statement */
-		   	$stmt->close();
-	    		}
+				    /* close statement */
+				    $stmt->close();
+
+				}
+			}else{
+				if ($stmt = $mysqli->prepare("INSERT INTO tweets (user_name, screen_name, tweet, tweetid, retweet_count, followers_count, friends_count, listed_count, source, lang, coordinates_type, lon, lat, location, date_tweeted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
+
+				/* bind parameters for markers */
+			    	$stmt->bind_param("sssiiiiisssddss",$tweet->user->name, $tweet->user->screen_name, $tweet->text, $tweet->id_str, $tweet->retweet_count, $tweet->user->followers_count, $tweet->user->friends_count, $tweet->user->listed_count, $tweet->source, $tweet->lang, $tweet->coordinates->type, $tweet->coordinates->coordinates[0], $tweet->coordinates->coordinates[1], $tweet->user->location, $datetime_mysql);
+
+			    	/* execute query */
+			    	$stmt->execute();
+		
+			   	/* close statement */
+			   	$stmt->close();
+		    		}
+			}		
+
 		}
+
 			
 	}
 }
 
+
 //Output the number of recent tweets that are stored in the db
-echo "fresh tweets:  $count <br />";
+//echo "fresh tweets:  $count <br />";
 
 //Update the new max tweet id
 /* create a prepared statement */
@@ -181,7 +214,7 @@ if ($stmt = $mysqli->prepare("SELECT MAX(tweetid) FROM tweets")) {
     $stmt->close();
 }
 
-echo "max tweet id:  $max_tweetid <br />";
+//echo "max tweet id:  $max_tweetid <br />";
 
 
 ?>
